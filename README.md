@@ -41,6 +41,47 @@ To also wipe the database:
 docker compose down -v
 ```
 
+## Deploy to Kubernetes (Rancher Desktop)
+
+Manifests live in `kubernetes/` (namespace `timekeeper`, Postgres with a
+`local-path` PVC, backend, and a NodePort frontend). Build the images locally
+first so the cluster can use them from the shared Docker image store:
+
+```bash
+docker build -t timekeeper-backend:latest ./backend
+docker build -t timekeeper-frontend:latest ./frontend
+kubectl apply -f kubernetes/
+```
+
+Open <http://localhost:30080>. The backend stays a `ClusterIP` service; for
+direct API access use `kubectl port-forward -n timekeeper svc/backend 8080:8080`.
+
+`docker compose` and these manifests use the same `timekeeper-*:latest` image
+tags. After rebuilding an image, recreate its pod so the kubelet resolves the
+new build (with a mutable tag it may keep the cached one):
+
+```bash
+kubectl -n timekeeper delete pod -l app=frontend
+kubectl -n timekeeper delete pod -l app=backend
+```
+
+To carry over data from the docker-compose database:
+
+```bash
+docker exec timekeeper-db pg_dump -U timekeeper -d timekeeper \
+  --data-only --no-owner -t work_day > /tmp/work_day.sql
+docker exec timekeeper-db pg_dump -U timekeeper -d timekeeper \
+  --data-only --no-owner -t time_entry > /tmp/time_entry.sql
+{ echo "TRUNCATE work_day RESTART IDENTITY CASCADE;"; cat /tmp/work_day.sql /tmp/time_entry.sql; } \
+  | kubectl -n timekeeper exec -i deploy/db -- psql -U timekeeper -d timekeeper
+```
+
+To remove the deployment (the PVC/data is deleted with it):
+
+```bash
+kubectl delete namespace timekeeper
+```
+
 ## Local development
 
 Start just the database:

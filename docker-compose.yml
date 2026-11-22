@@ -17,6 +17,7 @@ services:
       retries: 10
 
   backend:
+    image: timekeeper-backend:latest
     build: ./backend
     container_name: timekeeper-backend
     depends_on:
@@ -30,6 +31,7 @@ services:
       - "8080:8080"
 
   frontend:
+    image: timekeeper-frontend:latest
     build: ./frontend
     container_name: timekeeper-frontend
     depends_on:
