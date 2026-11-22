@@ -1,0 +1,19 @@
+# IntelliJ
+.idea/
+*.iml
+out/
+
+# Backend (Gradle)
+backend/.gradle/
+backend/build/
+
+# Frontend (Node)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# OS
+.DS_Store
+
+# Env
+.env
