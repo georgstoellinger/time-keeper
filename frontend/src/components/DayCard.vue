@@ -3,7 +3,14 @@ import { computed, reactive, ref, watch } from 'vue'
 import { api } from '../api/client'
 import { extractError } from '../errors'
 import type { Category, Day, TimeEntry } from '../types'
-import { durationPreview, formatDay, isToday, trimTime } from '../utils/date'
+import {
+  durationPreview,
+  formatDay,
+  isToday,
+  normalizeTime,
+  trimTime,
+} from '../utils/date'
+import TimeInput from './TimeInput.vue'
 
 const props = defineProps<{ day: Day; categories: Category[] }>()
 const emit = defineEmits<{ (e: 'changed'): void }>()
@@ -43,7 +50,9 @@ watch(
   { immediate: true, deep: true },
 )
 
-const previewMinutes = computed(() => durationPreview(form.start, form.end))
+const previewMinutes = computed(() =>
+  durationPreview(normalizeTime(form.start), normalizeTime(form.end)),
+)
 
 function resetForm() {
   editingId.value = null
@@ -63,17 +72,23 @@ function startEdit(entry: TimeEntry) {
 }
 
 async function submit() {
-  if (!form.start || !form.end || form.categoryId == null) {
-    error.value = 'Please fill in start, end and category.'
+  const startTime = normalizeTime(form.start)
+  const endTime = normalizeTime(form.end)
+
+  if (!startTime || !endTime || form.categoryId == null) {
+    error.value = 'Please enter valid times (HH:mm) and a category.'
     return
   }
+
+  form.start = startTime
+  form.end = endTime
 
   saving.value = true
   error.value = null
   try {
     const payload = {
-      startTime: form.start,
-      endTime: form.end,
+      startTime,
+      endTime,
       categoryId: form.categoryId,
       notes: form.notes.trim() ? form.notes.trim() : null,
     }
@@ -149,8 +164,8 @@ async function saveNotes() {
     </div>
 
     <div class="entry-form">
-      <input v-model="form.start" type="time" aria-label="Start time" />
-      <input v-model="form.end" type="time" aria-label="End time" />
+      <TimeInput v-model="form.start" label="Start time" />
+      <TimeInput v-model="form.end" label="End time" />
       <select v-model="form.categoryId" aria-label="Category">
         <option v-for="c in categories" :key="c.id" :value="c.id">
           {{ c.name }}

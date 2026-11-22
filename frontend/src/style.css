@@ -286,6 +286,12 @@ input[type='color'] {
   border-top: 1px dashed var(--border);
 }
 
+.time-input {
+  width: 5.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 .entry-form .notes-input {
   flex: 1;
   min-width: 10rem;
